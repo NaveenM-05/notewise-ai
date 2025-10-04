@@ -40,3 +40,82 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Target the subtitle paragraph under the h1 */
+.App > p {
+  font-size: 18px;
+  color: #aaa;
+  margin-top: 0;
+}
+
+/* In your App.css file */
+button {
+  background: linear-gradient(90deg, #5e42a6, #b74e91); /* A nice gradient */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: transform 0.2s ease;
+}
+
+button:hover {
+  transform: scale(1.05); /* A subtle hover effect */
+}
+
+button:disabled {
+  background: #555;
+  cursor: not-allowed;
+}
+
+textarea {
+  width: 100%;
+  min-height: 150px;
+  background-color: #2c2c34;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 12px;
+  color: #f0f0f0;
+  font-family: inherit;
+  font-size: 16px;
+}
+
+.results-container {
+  margin-top: 30px;
+  width: 100%;
+}
+
+.flashcards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Responsive grid */
+  gap: 20px;
+}
+
+.flashcard {
+  background-color: #25252b;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #333;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  text-align: left;
+}
+
+.flashcard h4 { /* The question */
+  margin-top: 0;
+  color: #b74e91; /* Use an accent color */
+}
+
+.flashcard p { /* The answer */
+  color: #ccc;
+}
+
+h1 {
+  font-size: 48px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Adds space between "NoteWise AI" and the brain emoji */
+}

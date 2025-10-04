@@ -18,62 +18,47 @@ const generateFlashcards_FAKE = async (formData) => {
 };
 
 function App() {
-  const [notes, setNotes] = useState(''); // For the textarea
   const [selectedFile, setSelectedFile] = useState(null); // For the PDF file
   const [flashcards, setFlashcards] = useState([]); // For the results
   const [isLoading, setIsLoading] = useState(false); // For the loading message
 
-  // We will create the handleGenerate function next
   const handleGenerate = async () => {
-  if (!notes && !selectedFile) {
-    alert("Please enter some text or upload a PDF file.");
-    return;
-  }
-  
-  setIsLoading(true);
-  setFlashcards([]); // Clear previous results
+    // Simplified check: only looks for a file
+    if (!selectedFile) {
+      alert("Please upload a PDF file to continue.");
+      return;
+    }
+    
+    setIsLoading(true);
+    setFlashcards([]); // Clear previous results
 
-  const formData = new FormData();
-  if (selectedFile) {
+    const formData = new FormData();
     formData.append("file", selectedFile);
-  } else {
-    formData.append("text", notes);
-  }
 
-  try {
-    // Call the FAKE function for now
-    const data = await generateFlashcards_FAKE(formData);
-    setFlashcards(data.flashcards);
-  } catch (error) {
-    console.error("Error generating flashcards:", error);
-    alert("There was an error generating your flashcards.");
-  }
+    try {
+      // Call the FAKE function for now. Later, you'll swap this with the real 'fetch' call.
+      const data = await generateFlashcards_FAKE(formData);
+      setFlashcards(data.flashcards);
+    } catch (error) {
+      console.error("Error generating flashcards:", error);
+      alert("There was an error generating your flashcards.");
+    }
 
-  setIsLoading(false);
-};
+    setIsLoading(false);
+  };
 
   return (
     <div className="App">
       <h1>NoteWise AI 🧠</h1>
-      <p>Upload your notes as text or a PDF to generate flashcards instantly.</p>
+      <p>Upload your PDF notes to generate flashcards instantly.</p>
 
+      {/* Simplified input container */}
       <div className="input-container">
-        <textarea
-          value={notes}
-          onChange={(e) => {
-            setNotes(e.target.value);
-            setSelectedFile(null); // Clear file if user types
-          }}
-          placeholder="Paste your notes here..."
-          disabled={isLoading}
-        />
-        <span className="or-divider">OR</span>
         <input
           type="file"
           accept=".pdf"
           onChange={(e) => {
             setSelectedFile(e.target.files[0]);
-            setNotes(''); // Clear text if user uploads file
           }}
           disabled={isLoading}
         />
@@ -84,18 +69,18 @@ function App() {
       </button>
 
       <div className="results-container">
-  {isLoading && <p className="loading-text">AI is thinking...</p>}
-  {flashcards.length > 0 && !isLoading && (
-    <div className="flashcards-grid">
-      {flashcards.map((card, index) => (
-        <div className="flashcard" key={index}>
-          <h4>{card.question}</h4>
-          <p>{card.answer}</p>
-        </div>
-      ))}
-    </div>
-  )}
-</div>
+        {isLoading && <p className="loading-text">AI is thinking...</p>}
+        {flashcards.length > 0 && !isLoading && (
+          <div className="flashcards-grid">
+            {flashcards.map((card, index) => (
+              <div className="flashcard" key={index}>
+                <h4>{card.question}</h4>
+                <p>{card.answer}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

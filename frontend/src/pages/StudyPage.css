@@ -1,0 +1,78 @@
+.study-page h1 {
+    margin-bottom: 0.5rem;
+}
+.study-page > p {
+    color: var(--secondary-text-color);
+    margin-top: 0;
+}
+
+.study-area {
+    margin-top: 2rem;
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+.flashcard-viewer {
+    flex: 2; /* Takes up more space */
+}
+
+.pomodoro-container {
+    flex: 1; /* Takes up less space */
+    position: sticky;
+    top: 2rem;
+}
+
+.navigation-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+@media (max-width: 900px) {
+    .study-area {
+        flex-direction: column;
+    }
+    .pomodoro-container {
+        position: static;
+        width: 100%;
+    }
+}
+.feedback-controls {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background-color: var(--surface-color);
+    border-radius: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+    align-items: center;
+}
+
+.feedback-controls p {
+    grid-column: 1 / -1; /* Make title span all columns */
+    text-align: center;
+    margin: 0 0 0.5rem 0;
+    color: var(--secondary-text-color);
+}
+
+.feedback-btn {
+    margin-top: 0 !important;
+}
+
+/* Specific colors for the buttons */
+.feedback-btn.again {
+    background: #c94a4a;
+}
+.feedback-btn.good {
+    background: #4a8ac9;
+}
+.feedback-btn.easy {
+    background: #4ac96a;
+}
+.next-btn {
+    margin-top: 0 !important;
+    background: transparent !important;
+    color: var(--secondary-text-color);
+}

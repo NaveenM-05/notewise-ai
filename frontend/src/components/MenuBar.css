@@ -1,0 +1,51 @@
+/* frontend/src/components/MenuBar.css */
+.menu-bar {
+  /* This makes the bar itself full-width */
+  width: 100%;
+  padding: 1rem 2rem; /* Vertical padding, and side padding for mobile */
+  background-color: var(--surface-color);
+  border-bottom: 1px solid #333;
+  box-sizing: border-box;
+  
+  /* This centers the .menu-bar-content div */
+  display: flex;
+  justify-content: center;
+}
+
+/* This is the new inner container */
+.menu-bar-content {
+  /* This aligns its children (logo, links, button) */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  
+  /* This makes it match the .content width */
+  width: 100%;
+  max-width: 1200px;
+}
+
+.menu-logo a, .menu-links a, .menu-auth a {
+  color: var(--primary-text-color);
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.menu-links {
+  list-style: none;
+  display: flex;
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
+}
+
+.menu-auth .logout-btn {
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+  margin-top: 0 !important;
+  background: transparent !important;
+  border: 1px solid var(--accent-color) !important;
+}
+
+.menu-auth .logout-btn:hover {
+    background: rgba(183, 78, 145, 0.2) !important;
+}

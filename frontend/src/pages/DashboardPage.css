@@ -1,0 +1,35 @@
+/* --- THIS IS THE NEW RULE TO ADD --- */
+.dashboard-page h1 {
+  text-align: center;
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+}
+/* --------------------------------- */
+
+.study-set-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  /* margin-top: 2rem; (This is now handled by the h1 margin) */
+}
+.study-set-card {
+  background-color: var(--surface-color);
+  padding: 1.5rem;
+  border-radius: 12px;
+  text-align: left;
+  border: 1px solid #333;
+}
+.card-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+}
+.action-link {
+    background: var(--accent-gradient);
+    color: white;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 14px;
+}

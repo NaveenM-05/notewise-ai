@@ -1,3 +1,20 @@
+# --------------------------------
+# --- Node.js / Frontend Rules ---
+# --------------------------------
+
+# Ignore ALL node_modules folders, at any level
+node_modules/
+
+# Ignore the frontend's build output
+/frontend/dist/
+
+# Ignore Vite cache
+.vite/
+
+# Ignore crash logs and debug files
+npm-debug.log*
+*.log
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

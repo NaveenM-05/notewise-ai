@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { getFlashcardsForSet_FAKE, saveReview_FAKE } from '../api/mockApi';
 import Flashcard from '../components/Flashcard';
 import PomodoroTimer from '../components/PomodoroTimer';
+import LoadingSpinner from '../components/LoadingSpinner';
 import './StudyPage.css'; // We'll add new styles to this
 
 function StudyPage() {
@@ -40,7 +41,7 @@ function StudyPage() {
     };
 
     if (isLoading) {
-        return <p>Loading study session...</p>;
+        return <LoadingSpinner />;
     }
 
     if (flashcards.length === 0) {

@@ -33,3 +33,25 @@
     font-weight: bold;
     font-size: 14px;
 }
+
+.empty-state {
+  background-color: var(--surface-color);
+  padding: 3rem;
+  border-radius: 12px;
+  text-align: center;
+  border: 2px dashed #444;
+}
+
+.empty-state h3 {
+  margin-top: 0;
+}
+
+.empty-state p {
+  color: var(--secondary-text-color);
+  font-size: 1.1rem;
+}
+
+.empty-state .action-link {
+    display: inline-block; /* Makes the button display correctly */
+    margin-top: 1rem;
+}

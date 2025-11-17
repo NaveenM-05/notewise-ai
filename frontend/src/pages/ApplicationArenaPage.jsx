@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { getArenaChallenge_FAKE } from '../api/mockApi';
+import LoadingSpinner from '../components/LoadingSpinner';
 import './ApplicationArenaPage.css';
 
 function ApplicationArenaPage() {
@@ -21,7 +22,7 @@ function ApplicationArenaPage() {
     }, [setId]);
 
     if (isLoading) {
-        return <p>Generating your challenge...</p>;
+        return <LoadingSpinner />;
     }
 
     return (

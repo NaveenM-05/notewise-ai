@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getQuizData_FAKE } from '../api/mockApi';
+import LoadingSpinner from '../components/LoadingSpinner';
 import './QuizPage.css';
 
 function QuizPage() {
@@ -45,7 +46,7 @@ function QuizPage() {
         }
     };
 
-    if (isLoading) return <p>Loading quiz...</p>;
+    if (isLoading) return <LoadingSpinner />;
     if (questions.length === 0) return <p>No quiz found for this set.</p>;
 
     // Show final score screen

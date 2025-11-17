@@ -18,7 +18,7 @@ const MOCK_STUDY_SETS = [
 
 export const getStudySets_FAKE = async () => {
     await new Promise(resolve => setTimeout(resolve, 1000));
-    return MOCK_STUDY_SETS;
+    return [];
 };
 
 // --- GENERATION ---

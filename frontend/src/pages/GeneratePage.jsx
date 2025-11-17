@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Flashcard from '../components/Flashcard';
 import { generateFlashcards_FAKE } from '../api/mockApi';
+import LoadingSpinner from '../components/LoadingSpinner';
 import './GeneratePage.css';
 
 function GeneratePage() {
@@ -69,7 +70,7 @@ function GeneratePage() {
       </button>
 
       <div className="results-container">
-        {isLoading && <p className="loading-text">AI is thinking...</p>}
+        {isLoading && <LoadingSpinner />}
         {flashcards.length > 0 && (
           <div className="flashcards-grid">
             {flashcards.map((card, index) => (

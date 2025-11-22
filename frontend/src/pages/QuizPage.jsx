@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getQuizData_FAKE } from '../api/mockApi';
+import { apiGetQuiz } from '../api/apiClient'; // Real API
 import LoadingSpinner from '../components/LoadingSpinner';
 import './QuizPage.css';
 
@@ -17,20 +17,22 @@ function QuizPage() {
     useEffect(() => {
         const fetchQuiz = async () => {
             setIsLoading(true);
-            const data = await getQuizData_FAKE(setId);
-            setQuestions(data);
+            try {
+                const data = await apiGetQuiz(setId);
+                setQuestions(data);
+            } catch (err) {
+                console.error("Failed to load quiz", err);
+            }
             setIsLoading(false);
         };
         fetchQuiz();
     }, [setId]);
 
     const handleAnswerSelect = (option) => {
-        if (isAnswered) return; // Don't let them change their answer
-        
+        if (isAnswered) return;
         setSelectedAnswer(option);
         setIsAnswered(true);
-
-        if (option === questions[currentQuestionIndex].correctAnswer) {
+        if (option === questions[currentQuestionIndex].correct_answer) { // Note: Python uses correct_answer
             setScore(score + 1);
         }
     };
@@ -41,15 +43,14 @@ function QuizPage() {
             setIsAnswered(false);
             setSelectedAnswer(null);
         } else {
-            // End of the quiz
             setShowResults(true);
+            // TODO: Call apiSubmitQuiz(setId, score) here later
         }
     };
 
     if (isLoading) return <LoadingSpinner />;
     if (questions.length === 0) return <p>No quiz found for this set.</p>;
 
-    // Show final score screen
     if (showResults) {
         return (
             <div className="quiz-container results">
@@ -62,12 +63,11 @@ function QuizPage() {
 
     const currentQuestion = questions[currentQuestionIndex];
 
-    // Helper function to get button style
     const getOptionClass = (option) => {
-        if (!isAnswered) return "option-btn"; // Not answered yet
-        if (option === currentQuestion.correctAnswer) return "option-btn correct"; // This is the correct answer
-        if (option === selectedAnswer) return "option-btn incorrect"; // This is the wrong one they picked
-        return "option-btn"; // Other wrong answers
+        if (!isAnswered) return "option-btn";
+        if (option === currentQuestion.correct_answer) return "option-btn correct";
+        if (option === selectedAnswer) return "option-btn incorrect";
+        return "option-btn";
     };
 
     return (
@@ -77,7 +77,6 @@ function QuizPage() {
                 Question {currentQuestionIndex + 1} of {questions.length}
             </div>
             <h3>{currentQuestion.question}</h3>
-            
             <div className="options-grid">
                 {currentQuestion.options.map((option, index) => (
                     <button 
@@ -90,7 +89,6 @@ function QuizPage() {
                     </button>
                 ))}
             </div>
-
             {isAnswered && (
                 <button onClick={handleNextQuestion} className="next-btn">
                     {currentQuestionIndex < questions.length - 1 ? "Next Question" : "Show Results"}

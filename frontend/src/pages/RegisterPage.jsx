@@ -1,37 +1,33 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom'; // MODIFIED: Added 'Link' here
-import { useAuth } from '../context/AuthContext';
+import { useNavigate, Link } from 'react-router-dom';
+import { apiRegister } from '../api/apiClient';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { apiLogin } from '../api/apiClient'; 
-import './LoginPage.css';
+import './LoginPage.css'; // We can reuse the login styles!
 
-function LoginPage() {
-  const [email, setEmail] = useState('demo@test.com'); 
-  const [password, setPassword] = useState('password123');
+function RegisterPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("1. Submit button clicked!");
-    
-    setIsLoading(true);
     setError('');
-    
-    console.log("2. Attempting to login with:", email, password);
 
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      console.log("3. Calling apiLogin...");
-      const userData = await apiLogin(email, password); 
-      console.log("4. Login successful:", userData);
-      
-      login(userData); 
-      navigate('/'); 
+      await apiRegister(email, password);
+      alert("Registration successful! Please login.");
+      navigate('/login'); // Redirect to login page after success
     } catch (err) {
-      console.error("5. Login Error Caught:", err);
-      setError(err.message || "Login failed");
+      setError(err.message);
     }
     setIsLoading(false);
   };
@@ -39,8 +35,9 @@ function LoginPage() {
   return (
     <div className="login-page">
       <div className="login-container">
-        <h2>Welcome to NoteWise AI</h2>
-        <p>Login to continue to your dashboard.</p>
+        <h2>Create Account</h2>
+        <p>Join NoteWise AI to start learning.</p>
+        
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Email</label>
@@ -60,19 +57,29 @@ function LoginPage() {
               required 
             />
           </div>
+          <div className="form-group">
+            <label>Confirm Password</label>
+            <input 
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required 
+            />
+          </div>
+
           {error && <p className="error-message">{error}</p>}
+          
           <button type="submit" disabled={isLoading}>
-            {isLoading ? <LoadingSpinner /> : 'Login'}
+            {isLoading ? <LoadingSpinner /> : 'Sign Up'}
           </button>
         </form>
 
-        {/* This Link component caused the error because it wasn't imported */}
         <p className="demo-creds">
-            Don't have an account? <Link to="/register">Sign up</Link>
+          Already have an account? <Link to="/login">Login here</Link>
         </p>
       </div>
     </div>
   );
 }
 
-export default LoginPage;
+export default RegisterPage;

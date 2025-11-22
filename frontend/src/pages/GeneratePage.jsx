@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Flashcard from '../components/Flashcard';
-import { generateFlashcards_FAKE } from '../api/mockApi';
+import { useNavigate } from 'react-router-dom'; // Added for redirection
+import { apiGenerateStudySet } from '../api/apiClient'; // Import REAL API
 import LoadingSpinner from '../components/LoadingSpinner';
 import './GeneratePage.css';
 
@@ -8,7 +8,7 @@ function GeneratePage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [flashcards, setFlashcards] = useState([]);
+  const navigate = useNavigate(); // Hook to redirect user
   
   const handleFileSelect = (file) => {
     if (file && file.type === "application/pdf") {
@@ -36,11 +36,30 @@ function GeneratePage() {
       alert("Please select a file first.");
       return;
     }
+    
     setIsLoading(true);
-    setFlashcards([]);
-    const data = await generateFlashcards_FAKE(selectedFile);
-    setFlashcards(data.flashcards);
-    setIsLoading(false);
+    
+    // Prepare the form data for the backend
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
+    try {
+      // 1. Call the Real Backend
+      console.log("Sending PDF to AI...");
+      const newStudySet = await apiGenerateStudySet(formData);
+      
+      console.log("AI Generation Complete:", newStudySet);
+      
+      // 2. Redirect to the dashboard to see the new set
+      // (Or we could redirect straight to study mode: `/study/${newStudySet.id}`)
+      navigate('/'); 
+      
+    } catch (error) {
+      console.error("Error generating flashcards:", error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -66,19 +85,16 @@ function GeneratePage() {
       </div>
       
       <button onClick={handleGenerate} disabled={isLoading || !selectedFile}>
-        {isLoading ? "Generating..." : "Generate Flashcards"}
+        {isLoading ? "AI is processing (this may take 30s)..." : "Generate Flashcards"}
       </button>
 
-      <div className="results-container">
-        {isLoading && <LoadingSpinner />}
-        {flashcards.length > 0 && (
-          <div className="flashcards-grid">
-            {flashcards.map((card, index) => (
-              <Flashcard key={index} question={card.question} answer={card.answer} />
-            ))}
-          </div>
-        )}
-      </div>
+      {isLoading && (
+        <div className="loading-container">
+            <LoadingSpinner />
+            <p className="loading-text">Analyzing your PDF...</p>
+            <p className="loading-subtext">Extracting topics, generating flashcards, and building quizzes.</p>
+        </div>
+      )}
     </div>
   );
 }

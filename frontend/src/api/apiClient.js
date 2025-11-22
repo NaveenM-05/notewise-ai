@@ -1,19 +1,27 @@
-// This is the base URL of your partner's future backend server
+// frontend/src/api/apiClient.js
+
 const API_BASE_URL = 'http://127.0.0.1:8000';
 
 /**
- * A private helper function to make API requests.
- * It automatically adds the JWT token to the headers.
+ * Helper to get token safely
+ */
+const getToken = () => {
+  const token = localStorage.getItem('jwt_token');
+  if (!token) {
+    console.warn("Warning: No JWT token found in localStorage!");
+  }
+  return token;
+};
+
+/**
+ * General request helper for JSON APIs
  */
 const request = async (endpoint, method, body = null) => {
-  // 1. Get the token from the browser's memory (which we'll save on login)
-  const token = localStorage.getItem('jwt_token'); 
-
+  const token = getToken();
   const headers = {
     'Content-Type': 'application/json',
   };
 
-  // 2. If the token exists, add it to the Authorization header
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -27,42 +35,58 @@ const request = async (endpoint, method, body = null) => {
     config.body = JSON.stringify(body);
   }
 
-  // 3. Make the actual request
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
-  // 4. Handle errors
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.detail || 'An API error occurred');
   }
 
-  // 5. Return the JSON data if the request was successful
-  // Use .text() for responses that might be empty
   const responseText = await response.text();
   return responseText ? JSON.parse(responseText) : {};
 };
 
-/**
- * ----------------------------------------------------
- * Now, we define all our API functions for the app to use.
- * These will replace your "mockApi.js" functions.
- * ----------------------------------------------------
- */
-
 // --- AUTH ---
-export const apiLogin = (email, password) => {
-  // Login is special, it doesn't send a token
-  return fetch(`${API_BASE_URL}/api/login`, {
+
+export const apiLogin = async (email, password) => {
+  const formData = new URLSearchParams();
+  formData.append('username', email); 
+  formData.append('password', password);
+
+  const response = await fetch(`${API_BASE_URL}/api/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email, password: password }),
-  }).then(async res => {
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || 'Login failed');
-      }
-      return res.json(); // This will return { access_token: "...", token_type: "bearer" }
+    headers: { 
+        'Content-Type': 'application/x-www-form-urlencoded' 
+    },
+    body: formData,
   });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    const errorMessage = typeof errorData.detail === 'string' 
+      ? errorData.detail 
+      : 'Validation Error: Check input format';
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+};
+
+export const apiRegister = async (email, password) => {
+  const response = await fetch(`${API_BASE_URL}/api/register`, {
+    method: 'POST',
+    headers: { 
+        'Content-Type': 'application/json' 
+    },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || 'Registration failed');
+  }
+
+  return response.json();
 };
 
 // --- DASHBOARD ---
@@ -74,19 +98,33 @@ export const apiGetTodaysReview = () => {
   return request('/api/reviews/today', 'GET');
 };
 
-// --- GENERATION ---
+// --- GENERATION (The Fix is Here) ---
 export const apiGenerateStudySet = (formData) => {
-  // FormData requests are special and don't use the JSON helper
-  const token = localStorage.getItem('jwt_token');
+  const token = getToken();
   
+  // Debugging Log
+  console.log("Generating Study Set with Token:", token ? "Token Exists" : "TOKEN MISSING");
+
+  const headers = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  } else {
+    // If we have no token, the backend will definitely reject this. 
+    // We throw an error early to make debugging easier.
+    return Promise.reject(new Error("No authentication token found. Please log in again."));
+  }
+
   return fetch(`${API_BASE_URL}/api/generate`, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}` 
-      // Do NOT set 'Content-Type' for FormData, the browser does it
-    },
+    headers: headers,
     body: formData,
-  }).then(res => res.json());
+  }).then(async res => {
+      if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.detail || 'Generation failed');
+      }
+      return res.json();
+  });
 };
 
 // --- STUDY & QUIZ & ARENA ---

@@ -5,7 +5,9 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from sqlalchemy.orm import Session
-from . import models, schemas, database
+
+# MODIFIED: Removed "from ." to fix Import Error
+import models, schemas, database
 
 # --- Password Hashing (bcrypt) ---
 # Create a context for passlib

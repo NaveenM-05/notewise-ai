@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import MenuBar from './components/MenuBar';
 import ProtectedRoute from './components/ProtectedRoute';
-
+import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import GeneratePage from './pages/GeneratePage';
 import StudyPage from './pages/StudyPage';
@@ -20,6 +20,7 @@ function App() {
           <main className="content"> {/* <-- CRITICAL CLASSNAME */}
             <Routes>
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
               <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
               <Route path="/generate" element={<ProtectedRoute><GeneratePage /></ProtectedRoute>} />
               <Route path="/study/:setId" element={<ProtectedRoute><StudyPage /></ProtectedRoute>} />

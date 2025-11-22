@@ -1,4 +1,6 @@
-// This is the base URL of your partner's future backend server
+// frontend/src/api/apiClient.js
+
+// This is the base URL of your partner's backend server
 const API_BASE_URL = 'http://127.0.0.1:8000';
 
 /**
@@ -6,7 +8,7 @@ const API_BASE_URL = 'http://127.0.0.1:8000';
  * It automatically adds the JWT token to the headers.
  */
 const request = async (endpoint, method, body = null) => {
-  // 1. Get the token from the browser's memory (which we'll save on login)
+  // 1. Get the token from the browser's memory
   const token = localStorage.getItem('jwt_token'); 
 
   const headers = {
@@ -37,32 +39,64 @@ const request = async (endpoint, method, body = null) => {
   }
 
   // 5. Return the JSON data if the request was successful
-  // Use .text() for responses that might be empty
+  // Use .text() first to handle potentially empty responses
   const responseText = await response.text();
   return responseText ? JSON.parse(responseText) : {};
 };
 
 /**
  * ----------------------------------------------------
- * Now, we define all our API functions for the app to use.
- * These will replace your "mockApi.js" functions.
+ * API FUNCTIONS
  * ----------------------------------------------------
  */
 
 // --- AUTH ---
-export const apiLogin = (email, password) => {
-  // Login is special, it doesn't send a token
-  return fetch(`${API_BASE_URL}/api/login`, {
+
+export const apiLogin = async (email, password) => {
+  // 1. Create URLSearchParams to send data as 'application/x-www-form-urlencoded'
+  const formData = new URLSearchParams();
+  
+  // 2. CRITICAL: FastAPI's OAuth2PasswordRequestForm expects 'username', not 'email'
+  formData.append('username', email); 
+  formData.append('password', password);
+
+  const response = await fetch(`${API_BASE_URL}/api/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email, password: password }),
-  }).then(async res => {
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || 'Login failed');
-      }
-      return res.json(); // This will return { access_token: "...", token_type: "bearer" }
+    headers: { 
+        // 3. Explicitly set the content type for Form Data
+        'Content-Type': 'application/x-www-form-urlencoded' 
+    },
+    body: formData,
   });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    // Handle FastAPI validation errors (which can be arrays) or simple detail strings
+    const errorMessage = typeof errorData.detail === 'string' 
+      ? errorData.detail 
+      : 'Validation Error: Check input format';
+      
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+};
+
+export const apiRegister = async (email, password) => {
+  const response = await fetch(`${API_BASE_URL}/api/register`, {
+    method: 'POST',
+    headers: { 
+        'Content-Type': 'application/json' 
+    },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || 'Registration failed');
+  }
+
+  return response.json();
 };
 
 // --- DASHBOARD ---
@@ -77,16 +111,26 @@ export const apiGetTodaysReview = () => {
 // --- GENERATION ---
 export const apiGenerateStudySet = (formData) => {
   // FormData requests are special and don't use the JSON helper
+  // We need to manually get the token here
   const token = localStorage.getItem('jwt_token');
   
+  const headers = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  // NOTE: Do NOT set 'Content-Type' for FormData, the browser does it automatically with the boundary
+
   return fetch(`${API_BASE_URL}/api/generate`, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}` 
-      // Do NOT set 'Content-Type' for FormData, the browser does it
-    },
+    headers: headers,
     body: formData,
-  }).then(res => res.json());
+  }).then(async res => {
+      if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.detail || 'Generation failed');
+      }
+      return res.json();
+  });
 };
 
 // --- STUDY & QUIZ & ARENA ---

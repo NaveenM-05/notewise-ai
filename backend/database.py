@@ -1,26 +1,29 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import os
+from dotenv import load_dotenv
 
-# --- Database Setup ---
-# Replace with your actual PostgreSQL credentials
-# Format: "postgresql://USER:PASSWORD@HOST/DB_NAME"
-SQLALCHEMY_DATABASE_URL = "postgresql://user:password@localhost/notewise_db"
+# 1. Load the .env file explicitly
+load_dotenv()
 
-# Create the SQLAlchemy engine
+# 2. Get the URL
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
+
+# 3. Check if it exists (Prevent the "user" error)
+if not SQLALCHEMY_DATABASE_URL:
+    raise ValueError("DATABASE_URL is missing! Please check your .env file.")
+
+# 4. Create the engine
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
-# Create a SessionLocal class
-# Each instance of SessionLocal will be a new database session
+# 5. Create the SessionLocal class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Create a Base class
-# Our database models will inherit from this class
+# 6. Create the Base class
 Base = declarative_base()
 
-# --- Dependency ---
-# We will use this dependency in our API endpoints
-# to get a database session for each request.
+# 7. Dependency
 def get_db():
     db = SessionLocal()
     try:

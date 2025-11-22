@@ -1,16 +1,30 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.middleware.cors import CORSMiddleware # <--- 1. NEW IMPORT
 from sqlalchemy.orm import Session
 
-# Import all our components
-from . import models, schemas, security, database
+import models, schemas, security, database
 
 # --- Create Database Tables ---
-# This command tells SQLAlchemy to create all the tables defined in models.py
-# (We will eventually move to Alembic for "migrations")
 models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="NoteWise AI Backend")
+
+# --- 2. ADD CORS MIDDLEWARE HERE ---
+# This tells the backend to trust requests from your frontend
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+# -----------------------------------
 
 # Dependency for getting a DB session
 get_db = database.get_db
@@ -61,9 +75,6 @@ async def login_for_access_token(
     return {"access_token": access_token, "token_type": "bearer"}
 
 # --- Test Endpoint ---
-# A test endpoint to show how to use the auth dependency
 @app.get("/api/users/me", response_model=schemas.UserInDB)
 async def read_users_me(current_user: models.User = Depends(security.get_current_user)):
-    # If the user is not authenticated, get_current_user will raise
-    # an exception. If they are, it will return the user object.
     return current_user

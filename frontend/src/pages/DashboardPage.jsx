@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { apiGetStudySets, apiGetTodaysReview } from '../api/apiClient'; // MODIFIED: Use real API for both
+import { apiGetStudySets, apiGetTodaysReview, apiDeleteStudySet } from '../api/apiClient';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './DashboardPage.css';
 
@@ -9,44 +9,55 @@ function DashboardPage() {
     const [todayReview, setTodayReview] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            setIsLoading(true);
-            try {
-                // MODIFIED: Now calling the REAL backend for both lists
-                const [setsData, reviewData] = await Promise.all([
-                    apiGetStudySets(),
-                    apiGetTodaysReview() 
-                ]);
-                setStudySets(setsData);
-                setTodayReview(reviewData);
-            } catch (error) {
-                console.error("Failed to fetch dashboard data:", error);
-            }
-            setIsLoading(false);
-        };
-        fetchDashboardData();
-    }, []);
+    const fetchData = async () => {
+        setIsLoading(true);
+        try {
+            const [setsData, reviewData] = await Promise.all([
+                apiGetStudySets(),
+                apiGetTodaysReview()
+            ]);
+            const normalizedSets = setsData?.value ?? setsData;
+            const normalizedReview = reviewData?.value ?? reviewData;
+            setStudySets(Array.isArray(normalizedSets) ? normalizedSets : []);
+            setTodayReview(Array.isArray(normalizedReview) ? normalizedReview : []);
+        } catch (error) {
+            console.error("Failed to fetch dashboard data:", error);
+        }
+        setIsLoading(false);
+    };
 
-    if (isLoading) {
-        return <LoadingSpinner />;
-    }
+    useEffect(() => { fetchData(); }, []);
+
+    const handleDelete = async (setId) => {
+        if (window.confirm("Delete this study set?")) {
+            try {
+                await apiDeleteStudySet(setId);
+                fetchData();
+            } catch (error) {
+                alert("Failed to delete set");
+            }
+        }
+    };
+
+    if (isLoading) return <LoadingSpinner />;
 
     return (
         <div className="dashboard-page">
             <h1>My Dashboard</h1>
 
-            {/* Today's Review Section */}
+            {/* Today's Review */}
             <div className="todays-review">
                 <h2>Today's Review</h2>
                 {todayReview.length > 0 ? (
                     <div className="review-grid">
                         {todayReview.map(set => (
-                            <Link to={`/study/${set.setId}`} className="review-card" key={set.setId}>
-                                <h3>{set.title}</h3>
-                                <p>{set.dueCardCount} cards due</p>
-                                <span className="review-now-btn">Review Now</span>
-                            </Link>
+                            <div className="review-card-wrapper" key={set.setId}>
+                                <Link to={`/study/${set.setId}?mode=due`} className="review-card">
+                                    <h3>{set.title}</h3>
+                                    <p>{set.dueCardCount} cards due today</p>
+                                    <span className="review-now-btn">Review Now</span>
+                                </Link>
+                            </div>
                         ))}
                     </div>
                 ) : (
@@ -56,15 +67,23 @@ function DashboardPage() {
                 )}
             </div>
             
-            {/* All Study Sets Section */}
+            {/* Study Sets */}
             <h2>All Study Sets</h2>
-            
             {studySets.length > 0 ? (
                 <div className="study-set-grid">
                     {studySets.map(set => (
                         <div key={set.id} className="study-set-card">
-                            <h3>{set.title}</h3>
-                            <p>{set.card_count} cards</p>
+                            <div className="card-header">
+                                <h3>{set.title}</h3>
+                                <button className="delete-btn" onClick={() => handleDelete(set.id)}>✕</button>
+                            </div>
+                            <div className="stats-row">
+                                <p>{set.card_count} cards</p>
+                                {set.mastery_score > 0 && (
+                                    // FIXED: Added Math.round() here
+                                    <span className="mastery-badge">Mastery: {Math.round(set.mastery_score)}%</span>
+                                )}
+                            </div>
                             <div className="card-actions">
                                  <Link to={`/study/${set.id}`} className="action-link">Study</Link>
                                  <Link to={`/quiz/${set.id}`} className="action-link quiz">Quiz</Link>
@@ -75,11 +94,8 @@ function DashboardPage() {
                 </div>
             ) : (
                 <div className="empty-state">
-                    <h3>You haven't created any study sets yet.</h3>
-                    <p>Click the "Generate" button to upload a PDF and get started!</p>
-                    <Link to="/generate" className="action-link">
-                        Generate Your First Set
-                    </Link>
+                    <h3>No study sets yet.</h3>
+                    <Link to="/generate" className="action-link">Generate Your First Set</Link>
                 </div>
             )}
         </div>

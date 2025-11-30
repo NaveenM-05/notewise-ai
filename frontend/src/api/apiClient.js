@@ -1,157 +1,87 @@
-// frontend/src/api/apiClient.js
-
 const API_BASE_URL = 'http://127.0.0.1:8000';
 
-/**
- * Helper to get token safely
- */
-const getToken = () => {
-  const token = localStorage.getItem('jwt_token');
-  if (!token) {
-    console.warn("Warning: No JWT token found in localStorage!");
-  }
-  return token;
-};
+const getToken = () => localStorage.getItem('jwt_token');
 
-/**
- * General request helper for JSON APIs
- */
 const request = async (endpoint, method, body = null) => {
   const token = getToken();
-  const headers = {
-    'Content-Type': 'application/json',
-  };
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const config = {
-    method: method,
-    headers: headers,
-  };
-
-  if (body) {
-    config.body = JSON.stringify(body);
-  }
+  const config = { method, headers };
+  if (body) config.body = JSON.stringify(body);
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-
   if (!response.ok) {
     const errorData = await response.json();
     throw new Error(errorData.detail || 'An API error occurred');
   }
-
-  const responseText = await response.text();
-  return responseText ? JSON.parse(responseText) : {};
+  const text = await response.text();
+  return text ? JSON.parse(text) : {};
 };
 
 // --- AUTH ---
-
 export const apiLogin = async (email, password) => {
   const formData = new URLSearchParams();
   formData.append('username', email); 
   formData.append('password', password);
-
   const response = await fetch(`${API_BASE_URL}/api/login`, {
     method: 'POST',
-    headers: { 
-        'Content-Type': 'application/x-www-form-urlencoded' 
-    },
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: formData,
   });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    const errorMessage = typeof errorData.detail === 'string' 
-      ? errorData.detail 
-      : 'Validation Error: Check input format';
-    throw new Error(errorMessage);
-  }
-
+  if (!response.ok) throw new Error('Login failed');
   return response.json();
 };
 
 export const apiRegister = async (email, password) => {
   const response = await fetch(`${API_BASE_URL}/api/register`, {
     method: 'POST',
-    headers: { 
-        'Content-Type': 'application/json' 
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.detail || 'Registration failed');
-  }
-
+  if (!response.ok) throw new Error('Registration failed');
   return response.json();
 };
 
 // --- DASHBOARD ---
-export const apiGetStudySets = () => {
-  return request('/api/study-sets', 'GET');
-};
+export const apiGetStudySets = () => request('/api/study-sets', 'GET');
+export const apiGetTodaysReview = () => request('/api/reviews/today', 'GET');
+export const apiDeleteStudySet = (setId) => request(`/api/study-sets/${setId}`, 'DELETE');
 
-export const apiGetTodaysReview = () => {
-  return request('/api/reviews/today', 'GET');
-};
-
-// --- GENERATION (The Fix is Here) ---
+// --- GENERATION ---
 export const apiGenerateStudySet = (formData) => {
   const token = getToken();
-  
-  // Debugging Log
-  console.log("Generating Study Set with Token:", token ? "Token Exists" : "TOKEN MISSING");
-
   const headers = {};
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  } else {
-    // If we have no token, the backend will definitely reject this. 
-    // We throw an error early to make debugging easier.
-    return Promise.reject(new Error("No authentication token found. Please log in again."));
-  }
-
-  return fetch(`${API_BASE_URL}/api/generate`, {
-    method: 'POST',
-    headers: headers,
-    body: formData,
-  }).then(async res => {
-      if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.detail || 'Generation failed');
-      }
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return fetch(`${API_BASE_URL}/api/generate`, { method: 'POST', headers, body: formData })
+    .then(async res => {
+      if (!res.ok) throw new Error('Generation failed');
       return res.json();
-  });
+    });
 };
 
-// --- STUDY & QUIZ & ARENA ---
-export const apiGetFlashcards = (setId) => {
-  return request(`/api/study-set/${setId}/flashcards`, 'GET');
+// --- STUDY & REVIEW ---
+export const apiGetFlashcards = (setId, mode = "all") => request(`/api/study-set/${setId}/flashcards?mode=${mode}`, 'GET');
+export const apiSaveReview = (cardId, difficulty) => request('/api/flashcards/review', 'POST', { card_id: cardId, difficulty });
+
+// --- QUIZ ---
+export const apiGetQuiz = (setId) => request(`/api/quiz/${setId}`, 'GET');
+export const apiSubmitQuiz = (setId, answers) => request('/api/quiz/complete', 'POST', { set_id: setId, answers });
+// NEW: Regenerate Quiz
+export const apiRegenerateQuiz = (setId) => request(`/api/quiz/regenerate/${setId}`, 'POST');
+
+// --- ARENA ---
+export const apiGetArenaChallenge = (setId) => request(`/api/arena/${setId}`, 'GET');
+// UPDATED: Sends user_response text
+export const apiSubmitArena = (setId, challengeId, userResponse) => {
+    return request('/api/arena/submit', 'POST', { 
+        set_id: setId, 
+        challenge_id: challengeId, 
+        user_response: userResponse 
+    });
 };
 
-export const apiSaveReview = (cardId, difficulty) => {
-  return request('/api/flashcards/review', 'POST', { card_id: cardId, difficulty: difficulty });
-};
-
-export const apiGetQuiz = (setId) => {
-    return request(`/api/quiz/${setId}`, 'GET');
-};
-
-export const apiSubmitQuiz = (setId, score) => {
-    return request('/api/quiz/complete', 'POST', { set_id: setId, score: score });
-};
-
-export const apiGetArenaChallenge = (setId) => {
-    return request(`/api/arena/${setId}`, 'GET');
-};
-
-export const apiSubmitArena = (setId, challengeId, assessmentScore) => {
-    return request('/api/arena/submit', 'POST', { set_id: setId, challenge_id: challengeId, self_score: assessmentScore });
-};
-
-export const apiLogTime = (setId, timeSpentMs) => {
-    return request('/api/study/log-time', 'POST', { set_id: setId, time_spent_ms: timeSpentMs });
+// Add this near the other Arena functions
+export const apiRegenerateArena = (setId) => {
+    return request(`/api/arena/regenerate/${setId}`, 'POST');
 };

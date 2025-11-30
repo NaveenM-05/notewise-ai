@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { apiGetQuiz } from '../api/apiClient'; // Real API
+import { apiGetQuiz, apiSubmitQuiz, apiRegenerateQuiz } from '../api/apiClient';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './QuizPage.css';
 
@@ -8,90 +8,130 @@ function QuizPage() {
     const { setId } = useParams();
     const [questions, setQuestions] = useState([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [score, setScore] = useState(0);
-    const [selectedAnswer, setSelectedAnswer] = useState(null);
+    const [userAnswers, setUserAnswers] = useState([]); 
+    
+    const [selectedOption, setSelectedOption] = useState(null);
     const [isAnswered, setIsAnswered] = useState(false);
-    const [showResults, setShowResults] = useState(false);
+    const [serverResult, setServerResult] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRegenerating, setIsRegenerating] = useState(false);
 
     useEffect(() => {
-        const fetchQuiz = async () => {
-            setIsLoading(true);
-            try {
-                const data = await apiGetQuiz(setId);
-                setQuestions(data);
-            } catch (err) {
-                console.error("Failed to load quiz", err);
-            }
-            setIsLoading(false);
-        };
-        fetchQuiz();
+        loadQuiz();
     }, [setId]);
+
+    const loadQuiz = async () => {
+        setIsLoading(true);
+        try {
+            const data = await apiGetQuiz(setId);
+            setQuestions(data);
+        } catch (err) {
+            console.error("Failed to load quiz", err);
+        }
+        setIsLoading(false);
+    };
+
+    const handleRegenerate = async () => {
+        if(!window.confirm("This will replace the current questions with new AI-generated ones. Continue?")) return;
+        setIsRegenerating(true);
+        try {
+            await apiRegenerateQuiz(setId);
+            // Reset state and reload
+            setServerResult(null);
+            setCurrentQuestionIndex(0);
+            setUserAnswers([]);
+            setIsAnswered(false);
+            setSelectedOption(null);
+            await loadQuiz();
+        } catch (e) {
+            alert("Failed to generate new quiz");
+        }
+        setIsRegenerating(false);
+    };
 
     const handleAnswerSelect = (option) => {
         if (isAnswered) return;
-        setSelectedAnswer(option);
+        setSelectedOption(option);
         setIsAnswered(true);
-        if (option === questions[currentQuestionIndex].correct_answer) { // Note: Python uses correct_answer
-            setScore(score + 1);
-        }
+        const currentQ = questions[currentQuestionIndex];
+        setUserAnswers(prev => [...prev, { question_id: currentQ.id, selected: option }]);
     };
 
-    const handleNextQuestion = () => {
+    const handleNextQuestion = async () => {
         if (currentQuestionIndex < questions.length - 1) {
-            setCurrentQuestionIndex(currentQuestionIndex + 1);
+            setCurrentQuestionIndex(prev => prev + 1);
             setIsAnswered(false);
-            setSelectedAnswer(null);
+            setSelectedOption(null);
         } else {
-            setShowResults(true);
-            // TODO: Call apiSubmitQuiz(setId, score) here later
+            setIsLoading(true);
+            try {
+                const result = await apiSubmitQuiz(setId, userAnswers);
+                setServerResult(result);
+            } catch (err) {
+                alert("Something went wrong submitting your quiz.");
+            }
+            setIsLoading(false);
         }
     };
 
-    if (isLoading) return <LoadingSpinner />;
-    if (questions.length === 0) return <p>No quiz found for this set.</p>;
+    if (isLoading || isRegenerating) return <LoadingSpinner />;
+    
+    // Empty state with regenerate button
+    if (questions.length === 0) return (
+        <div className="quiz-container">
+            <p>No quiz found for this set.</p>
+            <button onClick={handleRegenerate} className="regen-btn" disabled={isRegenerating}>
+                {isRegenerating ? "Generating..." : "Generate AI Quiz"}
+            </button>
+        </div>
+    );
 
-    if (showResults) {
+    if (serverResult) {
+        const percentage = Math.round((serverResult.correct / serverResult.answered) * 100);
         return (
             <div className="quiz-container results">
                 <h1>Quiz Complete!</h1>
-                <h2>Your Score: {score} / {questions.length}</h2>
-                <Link to="/" className="action-link">Back to Dashboard</Link>
+                <div className="score-circle">{percentage}%</div>
+                <h2>You got {serverResult.correct} out of {serverResult.answered} correct</h2>
+                <div className="actions">
+                    <Link to="/" className="action-link">Dashboard</Link>
+                    <button onClick={() => window.location.reload()} className="retry-btn">Retake</button>
+                    <button onClick={handleRegenerate} className="regen-btn secondary">Generate New Questions</button>
+                </div>
             </div>
         );
     }
 
     const currentQuestion = questions[currentQuestionIndex];
-
     const getOptionClass = (option) => {
         if (!isAnswered) return "option-btn";
         if (option === currentQuestion.correct_answer) return "option-btn correct";
-        if (option === selectedAnswer) return "option-btn incorrect";
+        if (option === selectedOption) return "option-btn incorrect";
         return "option-btn";
     };
 
     return (
         <div className="quiz-container">
-            <h1>Quiz Time!</h1>
-            <div className="quiz-progress">
-                Question {currentQuestionIndex + 1} of {questions.length}
+            <div className="quiz-header">
+                <h1>Knowledge Check</h1>
+                {/* NEW REGENERATE BUTTON */}
+                <button onClick={handleRegenerate} className="regen-icon-btn" title="Generate New Questions">↻ New Questions</button>
             </div>
-            <h3>{currentQuestion.question}</h3>
+            
+            <div className="quiz-progress">Question {currentQuestionIndex + 1} of {questions.length}</div>
+            <h3 className="question-text">{currentQuestion.question}</h3>
+            
             <div className="options-grid">
                 {currentQuestion.options.map((option, index) => (
-                    <button 
-                        key={index}
-                        className={getOptionClass(option)}
-                        onClick={() => handleAnswerSelect(option)}
-                        disabled={isAnswered}
-                    >
+                    <button key={index} className={getOptionClass(option)} onClick={() => handleAnswerSelect(option)} disabled={isAnswered}>
                         {option}
                     </button>
                 ))}
             </div>
+
             {isAnswered && (
                 <button onClick={handleNextQuestion} className="next-btn">
-                    {currentQuestionIndex < questions.length - 1 ? "Next Question" : "Show Results"}
+                    {currentQuestionIndex < questions.length - 1 ? "Next Question" : "Finish & Submit"}
                 </button>
             )}
         </div>

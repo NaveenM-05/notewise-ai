@@ -1,39 +1,153 @@
-/* --- THIS IS THE NEW RULE TO ADD --- */
+/* --------------------------------------------- */
+/* GLOBAL DASHBOARD LAYOUT FIXES (SAFE VERSION) */
+/* --------------------------------------------- */
+
+/* Center title */
 .dashboard-page h1 {
   text-align: center;
   font-size: 2.5rem;
   margin-bottom: 2rem;
 }
-/* --------------------------------- */
+
+/* ============================================= */
+/* TODAY'S REVIEW — FIXED, NO GRID CONFLICTS     */
+/* ============================================= */
+
+.todays-review {
+  margin: 2rem 0;
+}
+
+.review-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.review-card-wrapper {
+  width: 100%;
+}
+
+.review-card {
+  display: block;
+  background-color: var(--surface-color);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 2px solid #af2da1;
+  text-decoration: none;
+  color: white;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.review-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+}
+
+.review-card h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.review-card p {
+  margin-top: .4rem;
+  color: var(--secondary-text-color);
+}
+
+.review-now-btn {
+  margin-top: 1rem;
+  display: inline-block;
+  background: var(--accent-gradient);
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  color: #fff;
+  text-decoration: none;
+}
+
+/* Removes weird purple vertical bar */
+.review-card::before,
+.review-card::after {
+  content: none !important;
+}
+
+/* ============================================= */
+/* STUDY SET GRID — RESTORED ORIGINAL DESIGN     */
+/* ============================================= */
 
 .study-set-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
-  /* margin-top: 2rem; (This is now handled by the h1 margin) */
+  margin-top: 1rem;
 }
+
 .study-set-card {
   background-color: var(--surface-color);
   padding: 1.5rem;
   border-radius: 12px;
-  text-align: left;
   border: 1px solid #333;
-}
-.card-actions {
-    margin-top: 1.5rem;
-    display: flex;
-    gap: 1rem;
-}
-.action-link {
-    background: var(--accent-gradient);
-    color: white;
-    text-decoration: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-weight: bold;
-    font-size: 14px;
+  text-align: left;
+  position: relative;
 }
 
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.delete-btn {
+  background: var(--accent-gradient);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.delete-btn:hover {
+  transform: scale(1.1);
+}
+
+.stats-row {
+  margin-top: .5rem;
+  font-size: .95rem;
+  color: var(--secondary-text-color);
+}
+
+.mastery-badge {
+  background: var(--accent-gradient);
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: white;
+  font-size: .85rem;
+  margin-left: .5rem;
+}
+
+.card-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.action-link {
+  background: var(--accent-gradient);
+  color: white;
+  text-decoration: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+/* EMPTY STATES */
 .empty-state {
   background-color: var(--surface-color);
   padding: 3rem;
@@ -42,16 +156,12 @@
   border: 2px dashed #444;
 }
 
-.empty-state h3 {
-  margin-top: 0;
-}
-
-.empty-state p {
-  color: var(--secondary-text-color);
-  font-size: 1.1rem;
-}
-
 .empty-state .action-link {
-    display: inline-block; /* Makes the button display correctly */
-    margin-top: 1rem;
+  margin-top: 1rem;
+}
+
+/* MOBILE */
+@media (max-width: 600px) {
+  .review-grid { grid-template-columns: 1fr; }
+  .study-set-grid { grid-template-columns: 1fr; }
 }

@@ -1,5 +1,7 @@
+// frontend/src/pages/StudyPage.jsx
+
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom'; // Added useSearchParams
 import { apiGetFlashcards, apiSaveReview } from '../api/apiClient';
 import Flashcard from '../components/Flashcard';
 import PomodoroTimer from '../components/PomodoroTimer';
@@ -8,6 +10,10 @@ import './StudyPage.css';
 
 function StudyPage() {
     const { setId } = useParams();
+    const [searchParams] = useSearchParams();
+    // Check URL for ?mode=due
+    const mode = searchParams.get('mode') || 'all';
+
     const [flashcards, setFlashcards] = useState([]);
     const [currentCardIndex, setCurrentCardIndex] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
@@ -18,7 +24,8 @@ function StudyPage() {
         const fetchCards = async () => {
             setIsLoading(true);
             try {
-                const cards = await apiGetFlashcards(setId);
+                // Pass the mode ('all' or 'due') to the API
+                const cards = await apiGetFlashcards(setId, mode);
                 setFlashcards(cards);
             } catch (err) {
                 console.error("Failed to load cards", err);
@@ -26,7 +33,7 @@ function StudyPage() {
             setIsLoading(false);
         };
         fetchCards();
-    }, [setId]);
+    }, [setId, mode]);
 
     const handleReview = async (difficulty) => {
         if (!flashcards[currentCardIndex]) return;
@@ -34,13 +41,11 @@ function StudyPage() {
         const cardId = flashcards[currentCardIndex].id;
         
         try {
-             // Send the SM-2 rating to the backend
              await apiSaveReview(cardId, difficulty);
         } catch (e) {
             console.error("Failed to save review:", e);
         }
         
-        // Move to next card
         if (currentCardIndex < flashcards.length - 1) {
             setIsCardFlipped(false);
             setCurrentCardIndex(prev => prev + 1);
@@ -63,8 +68,18 @@ function StudyPage() {
     if (flashcards.length === 0) {
         return (
             <div className="study-page empty">
-                <h2>No cards found</h2>
-                <p>This study set seems to be empty.</p>
+                {mode === 'due' ? (
+                    <>
+                        <h2>🎉 All Caught Up!</h2>
+                        <p>You have no cards due for review in this set right now.</p>
+                        <p>Check back later or start a standard study session.</p>
+                    </>
+                ) : (
+                    <>
+                        <h2>No cards found</h2>
+                        <p>This study set seems to be empty.</p>
+                    </>
+                )}
                 <Link to="/" className="action-link">Back to Dashboard</Link>
             </div>
         );
@@ -75,7 +90,7 @@ function StudyPage() {
             <div className="study-page complete">
                 <div className="completion-card">
                     <h2>🎉 Session Complete!</h2>
-                    <p>You've reviewed all the cards in this set.</p>
+                    <p>You've reviewed all the cards in this queue.</p>
                     <Link to="/" className="action-link">Back to Dashboard</Link>
                 </div>
             </div>
@@ -87,7 +102,7 @@ function StudyPage() {
     return (
         <div className="study-page">
             <div className="header-section">
-                <h1>Study Session</h1>
+                <h1>{mode === 'due' ? 'Review Session' : 'Study Session'}</h1>
                 <p className="progress-text">Card {currentCardIndex + 1} of {flashcards.length}</p>
             </div>
             
@@ -100,7 +115,6 @@ function StudyPage() {
                         onClick={() => setIsCardFlipped(!isCardFlipped)}
                     />
                     
-                    {/* Only show rating buttons if card is flipped */}
                     {isCardFlipped ? (
                         <div className="feedback-controls">
                             <p>How well did you know this?</p>

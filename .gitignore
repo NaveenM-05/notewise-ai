@@ -237,3 +237,21 @@ backend/.env
 
 # OS files
 .DS_Store
+
+# Python Backend
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
+backend/.env
+backend/app/__pycache__/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.env.local
+
+# General
+.DS_Store
+*.log
+.vscode/

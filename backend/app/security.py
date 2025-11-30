@@ -1,52 +1,68 @@
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+import os
+from datetime import datetime, timedelta
+from typing import Optional, Union
+
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
-# --- FIXED IMPORTS (Relative) ---
-# The '.' means "look in the current folder"
-from . import models, schemas, database
+# Import models & database
+try:
+    from app import models, database
+except ImportError:
+    import models, database
 
-# --- Password Hashing (bcrypt) ---
-# Create a context for passlib
+# --------------------------
+# CONFIGURATION
+# --------------------------
+SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkey123")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 300  # 5 hours for dev convenience
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
 
+# --------------------------
+# PASSWORD UTILS
+# --------------------------
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
     return pwd_context.hash(password)
 
-# --- JWT Configuration ---
-SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 7 days
-
-# OAuth2 scheme
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/login")
+# --------------------------
+# AUTH LOGIC
+# --------------------------
+def authenticate_user(db: Session, username: str, password: str):
+    """
+    Looks up user by email (username) and verifies password.
+    Returns user object if valid, else False.
+    """
+    user = db.query(models.User).filter(models.User.email == username).first()
+    if not user:
+        return False
+    if not verify_password(password, user.password_hash):
+        return False
+    return user
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-# --- User Authentication ---
-def get_user(db: Session, email: str):
-    return db.query(models.User).filter(models.User.email == email).first()
-
-# --- Dependency to get current user ---
-async def get_current_user(
-    token: str = Depends(oauth2_scheme), 
-    db: Session = Depends(database.get_db)
-):
+# --------------------------
+# DEPENDENCY
+# --------------------------
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -54,14 +70,13 @@ async def get_current_user(
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
+        user_id: str = payload.get("sub")
+        if user_id is None:
             raise credentials_exception
-        token_data = schemas.TokenData(email=email)
     except JWTError:
         raise credentials_exception
     
-    user = get_user(db, email=token_data.email)
+    user = db.query(models.User).filter(models.User.id == int(user_id)).first()
     if user is None:
         raise credentials_exception
     return user

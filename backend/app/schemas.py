@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, ConfigDict
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
 from datetime import datetime, date
 
 # --- User Schemas ---
@@ -12,7 +12,7 @@ class UserCreate(UserBase):
 class UserInDB(UserBase):
     id: int
     is_active: bool
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 # --- Token Schemas ---
@@ -27,14 +27,18 @@ class TokenData(BaseModel):
 class FlashcardBase(BaseModel):
     question: str
     answer: str
-    tag: str
+    tag: Optional[str] = None  # tag can be optional
 
 class Flashcard(FlashcardBase):
     id: int
     set_id: int
     repetition_number: int
-    next_review_date: date
-    
+    next_review_date: Optional[date] = None
+
+    # Scheduling/debug fields exposed to API
+    interval: Optional[float] = None
+    ease_factor: Optional[float] = None
+
     model_config = ConfigDict(from_attributes=True)
 
 # --- Quiz Schemas ---
@@ -42,12 +46,12 @@ class QuizQuestionBase(BaseModel):
     question: str
     options: List[str]
     correct_answer: str
-    tag: str
+    tag: Optional[str] = None
 
 class QuizQuestion(QuizQuestionBase):
     id: int
     set_id: int
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 # --- Arena Schemas ---
@@ -59,7 +63,7 @@ class ArenaChallengeBase(BaseModel):
 class ArenaChallenge(ArenaChallengeBase):
     id: int
     set_id: int
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 # --- Study Set Schemas ---
@@ -78,9 +82,56 @@ class StudySet(StudySetBase):
     srs_success_rate: float
     total_time_studied_ms: int
     created_at: datetime
-    
-    # We can optionally include lists of items if needed
+
     flashcards: List[Flashcard] = []
     quiz_questions: List[QuizQuestion] = []
-    
+
     model_config = ConfigDict(from_attributes=True)
+
+class ReviewCardRequest(BaseModel):
+    card_id: int
+    difficulty: str
+
+class QuizCompleteRequest(BaseModel):
+    set_id: int
+    score: float
+
+class ArenaSubmitRequest(BaseModel):
+    set_id: int
+    challenge_id: int
+    self_score: float
+
+class LogTimeRequest(BaseModel):
+    set_id: int
+    time_spent_ms: int
+
+# ============================================================
+# NEW: FRESH QUIZ SESSION + ARENA SESSION SCHEMAS
+# ============================================================
+
+class QuizSessionCreate(BaseModel):
+    set_id: int
+    num_questions: int = 8  # default
+
+class QuizSessionOut(BaseModel):
+    session_id: int
+    questions: List[Dict[str, Any]]
+
+class QuizAnswerIn(BaseModel):
+    session_id: int
+    question_index: int
+    selected: Any
+
+class ArenaStartRequest(BaseModel):
+    set_id: int
+    difficulty: str  # "easy", "medium", "hard"
+
+class ArenaStartOut(BaseModel):
+    session_id: int
+    challenge: Dict[str, Any]
+    model_config = ConfigDict(from_attributes=True)
+
+class ArenaValidateRequest(BaseModel):
+    session_id: int
+    user_answer: str
+
